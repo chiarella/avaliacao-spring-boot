@@ -1,7 +1,10 @@
 package br.com.tokiomarine.seguradora.avaliacao.controller;
 
+import java.util.Optional;
+
 import javax.validation.Valid;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
 
 import br.com.tokiomarine.seguradora.avaliacao.entidade.Estudante;
 import br.com.tokiomarine.seguradora.avaliacao.service.EstudandeService;
@@ -17,7 +21,9 @@ import br.com.tokiomarine.seguradora.avaliacao.service.EstudandeService;
 @RequestMapping("/estudantes/")
 public class EstudanteController {
 
-	// TODO efetue a correção dos problemas que existem na classe Estudante Controller
+	// TODO efetue a correção dos problemas que existem na classe Estudante
+
+	@Autowired
 	EstudandeService service;
 
 	@GetMapping("criar")
@@ -25,15 +31,17 @@ public class EstudanteController {
 		return "cadastrar-estudante";
 	}
 
-	@GetMapping("listar")
+	@GetMapping("/listar")
 	public String listarEstudantes(Model model) {
-		model.addAttribute("estudtes", service.buscarEstudantes());
+		model.addAttribute("estudantes", service.buscarEstudantes());
 		return "index";
 	}
 
-	@PostMapping("add")
+	@PostMapping(path = "/add")
 	public String adicionarEstudante(@Valid Estudante estudante, BindingResult result, Model model) {
-		if (result.hasErrors()) {
+
+		if (result.hasErrors() || result.toString().trim().equals("")) {
+
 			return "cadastrar-estudante";
 		}
 
@@ -42,30 +50,35 @@ public class EstudanteController {
 		return "redirect:listar";
 	}
 
-	@GetMapping("editar/{id}")
-	public String exibirEdicaoEstudante(long id, Model model) {
-		Estudante estudante = service.buscarEstudante(id);
-		model.addAttribute("estudante", estudante);
-		return "atualizar-estudante";
+	@GetMapping("/editar/{id}")
+	public ModelAndView editar(@PathVariable("id") Long id) {
+
+		Optional<Estudante> estudante = service.getEstById(id);
+		ModelAndView modelAndView = new ModelAndView("atualizar-estudante");
+		modelAndView.addObject("estudante", estudante.get());
+		return modelAndView;
+
 	}
 
-	@PostMapping("atualizar/{id}")
-	public String atualizarEstudante(@PathVariable("id") long id, @Valid Estudante estudante, BindingResult result, Model model) {
-		if (result.hasErrors()) {
-			// estudante.setId(id);
+	@PostMapping("/atualizar/{id}")
+	public String atualizarEstudante(@PathVariable("id") Long id, @Valid Estudante estudante, BindingResult result,
+			Model model) {
+
+		if (result.hasErrors() || result.toString().trim().equals("")) {
 			return "atualizar-estudante";
 		}
 
-		service.atualizarEstudante(estudante);
-
+		service.atualizarEstudante(id, estudante);
 		model.addAttribute("estudantes", service.buscarEstudantes());
+
 		return "index";
 	}
 
 	@GetMapping("apagar/{id}")
-	public String apagarEstudante(@PathVariable("id") long id, Model model) {
-		// TODO IMPLEMENTAR A EXCLUSAO DE ESTUDANTES
+	public String apagarEstudante(@PathVariable("id") Long id, Model model) {
+		service.deleteById(id);
 		model.addAttribute("estudantes", service.buscarEstudantes());
 		return "index";
 	}
+
 }
